@@ -68,12 +68,10 @@ namespace TSN.UtilitiesLibrary
             StringBuilder sb = new();
             bool progressing = false;
             for (int i = 0; i < s.Length; i++)
-            {
                 if (char.IsWhiteSpace(s[i]))
                 {
                     progressing = false;
                     sb.Append(s[i]);
-                    continue;
                 }
                 else if (!progressing)
                 {
@@ -82,7 +80,6 @@ namespace TSN.UtilitiesLibrary
                 }
                 else
                     sb.Append(char.ToLower(s[i], culture));
-            }
             return sb.ToString();
         }
         public static string CapitalizeInvariant(this string s) => Capitalize(s, CultureInfo.InvariantCulture);
