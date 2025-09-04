@@ -63,7 +63,28 @@ namespace TSN.UtilitiesLibrary
         }
 
         public static bool IsEmptyWhiteSpace(this string s) => s.Equals(_regexWhiteSpace.Replace(s, string.Empty));
-        public static string Capitalize(this string s, CultureInfo culture) => string.Join(SpaceCharacter, _regexWhiteSpace.Split(s.Trim()).Select(x => x.Trim()).Where(x => !x.Equals(string.Empty)).Select(x => char.ToUpper(x[0], culture) + (x.Length == 1 ? string.Empty : x.Substring(1).ToLower(culture))));
+        public static string Capitalize(this string s, CultureInfo culture)
+        {
+            StringBuilder sb = new();
+            bool progressing = false;
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (char.IsWhiteSpace(s[i]))
+                {
+                    progressing = false;
+                    sb.Append(s[i]);
+                    continue;
+                }
+                else if (!progressing)
+                {
+                    progressing = true;
+                    sb.Append(char.ToUpper(s[i], culture));
+                }
+                else
+                    sb.Append(char.ToLower(s[i], culture));
+            }
+            return sb.ToString();
+        }
         public static string CapitalizeInvariant(this string s) => Capitalize(s, CultureInfo.InvariantCulture);
         public static string Capitalize(this string s) => Capitalize(s, CultureInfo.CurrentCulture);
         public static string TrimDeeper(this string s) => string.Join(SpaceCharacter, _regexWhiteSpace.Split(s.Trim()).Where(x => !x.Equals(string.Empty)));
