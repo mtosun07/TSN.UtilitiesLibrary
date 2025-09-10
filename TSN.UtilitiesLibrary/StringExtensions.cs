@@ -159,8 +159,6 @@ namespace TSN.UtilitiesLibrary
                 throw new ArgumentOutOfRangeException(nameof(canContain));
             if (canContain == CharacterKinds.None)
                 return string.Empty;
-            if (canContain == CharacterKinds.All)
-                return s ?? string.Empty;
             Func<char, bool> isLetter = letterCharSet is null ? char.IsLetter : letterCharSet.Contains;
             Func<char, bool> isDigit = digitCharSet is null ? char.IsDigit : digitCharSet.Contains;
             Func<char, bool> predicate;
@@ -171,7 +169,12 @@ namespace TSN.UtilitiesLibrary
                     if ((canContain & CharacterKinds.Other) != 0)
                     {
                         if ((canContain & CharacterKinds.WhiteSpace) != 0)
-                            throw new InvalidOperationException();
+                        {
+                            if (otherCharSet is null)
+                                return s ?? string.Empty;
+                            else
+                                predicate = x => isLetter.Invoke(x) || isDigit.Invoke(x) || char.IsWhiteSpace(x) || otherCharSet.Contains(x);
+                        }
                         else if (otherCharSet is null)
                             predicate = x => !char.IsWhiteSpace(x);
                         else
