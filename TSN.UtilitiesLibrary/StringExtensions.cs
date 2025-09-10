@@ -94,7 +94,8 @@ namespace TSN.UtilitiesLibrary
             return password.ToString().Shuffle();
         }
 
-        public static bool IsEmptyWhiteSpace(this string s) => s.Equals(_regexWhiteSpace.Replace(s, string.Empty));
+        public static bool HasNoWhiteSpace(this string s) => s.Equals(_regexWhiteSpace.Replace(s, string.Empty));
+        public static bool IsAllWhiteSpace(this string s) => _regexWhiteSpace.Replace(s, string.Empty).Equals(string.Empty);
         public static string Capitalize(this string s, CultureInfo culture)
         {
             StringBuilder sb = new();
