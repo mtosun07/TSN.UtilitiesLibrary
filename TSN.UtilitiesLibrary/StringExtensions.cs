@@ -9,6 +9,31 @@ namespace TSN.UtilitiesLibrary
     {
         static StringExtensions()
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            _latinLetters = new(() =>
+            {
+                HashSet<char> set = [];
+                for (int i = 65; i <= 90; i++)
+                    set.Add((char)i);
+                for (int i = 97; i <= 122; i++)
+                    set.Add((char)i);
+                for (int i = 192; i <= 591; i++)
+                    set.Add((char)i);
+                return set;
+            });
+            _latinDigits = new(() => "0123456789".ToHashSet());
+            _latinNonAlphanumerics = new(() =>
+            {
+                HashSet<char> set = [];
+                char c;
+                for (int i = 32; i <= 126; i++)
+                    if (!char.IsWhiteSpace(c = (char)i) && !_latinLetters.Value.Contains(c) && !_latinDigits.Value.Contains(c))
+                        set.Add(c);
+                for (int i = 160; i <= 255; i++)
+                    if (!char.IsWhiteSpace(c = (char)i) && !_latinLetters.Value.Contains(c) && !_latinDigits.Value.Contains(c))
+                        set.Add(c);
+                return set;
+            });
             _regexFalse = new("^(false|f|no|0)$");
             _regexTrue = new("^(true|t|yes|1)$");
             _regexWhiteSpace = new(@"\s");
@@ -26,6 +51,13 @@ namespace TSN.UtilitiesLibrary
         private static readonly Regex _regexWhiteSpace;
         private static readonly Regex _regexIpAddress;
         private static readonly Regex _regexEmailAddress;
+        private static readonly Lazy<IReadOnlySet<char>> _latinLetters;
+        private static readonly Lazy<IReadOnlySet<char>> _latinDigits;
+        private static readonly Lazy<IReadOnlySet<char>> _latinNonAlphanumerics;
+
+        public static IReadOnlySet<char> LatinLetters => _latinLetters.Value;
+        public static Lazy<IReadOnlySet<char>> LatinDigits => _latinDigits;
+        public static IReadOnlySet<char> LatinNonAlphaNumerics => _latinNonAlphanumerics.Value;
 
 
 
@@ -115,6 +147,45 @@ namespace TSN.UtilitiesLibrary
                 default:
                     break;
             }
+        }
+        public static string RemoveNonLatinChars(this string s, bool canContainLetters = true, bool canContainDigits = true, bool canContainSpecialChars = true)
+        {
+            /*
+             * The if/else if/else tree precomputes the character filter predicate
+             * based on the flags before iteration, eliminating per-character conditional checks
+             * and minimizing runtime overhead.
+             */
+            Func<char, bool> predicate;
+            if (canContainLetters)
+            {
+                if (canContainDigits)
+                {
+                    if (canContainSpecialChars)
+                        predicate = x => _latinLetters.Value.Contains(x) || _latinDigits.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                    else
+                        predicate = x => _latinLetters.Value.Contains(x) || _latinDigits.Value.Contains(x);
+                }
+                else if (canContainSpecialChars)
+                    predicate = x => _latinLetters.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                else
+                    predicate = _latinLetters.Value.Contains;
+            }
+            else if (canContainDigits)
+            {
+                if (canContainSpecialChars)
+                    predicate = x => _latinDigits.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                else
+                    predicate = _latinDigits.Value.Contains;
+            }
+            else if (canContainSpecialChars)
+                predicate = _latinNonAlphanumerics.Value.Contains;
+            else
+                return string.Empty;
+            StringBuilder sb = new();
+            foreach (var c in s)
+                if (predicate.Invoke(c))
+                    sb.Append(c);
+            return sb.ToString();
         }
         public static string RemoveDiacritics(this string s)
         {
