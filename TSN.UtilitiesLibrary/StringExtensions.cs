@@ -21,7 +21,7 @@ namespace TSN.UtilitiesLibrary
                     set.Add((char)i);
                 return set;
             });
-            _latinDigits = new(() => "0123456789".ToHashSet());
+            _latinDigits = new(() => new HashSet<char>("0123456789"));
             _latinNonAlphanumerics = new(() =>
             {
                 HashSet<char> set = [];
@@ -148,37 +148,65 @@ namespace TSN.UtilitiesLibrary
                     break;
             }
         }
-        public static string RemoveNonLatinChars(this string s, bool canContainLetters = true, bool canContainDigits = true, bool canContainSpecialChars = true)
+        public static string RemoveNonLatinChars(this string s, CharacterKinds canContain = CharacterKinds.All)
         {
             /*
-             * The if/else if/else tree precomputes the character filter predicate
+             * The if / else-if / else tree precomputes the character filter predicate
              * based on the flags before iteration, eliminating per-character conditional checks
              * and minimizing runtime overhead.
              */
             Func<char, bool> predicate;
-            if (canContainLetters)
+            if ((canContain & CharacterKinds.Letter) != 0)
             {
-                if (canContainDigits)
+                if ((canContain & CharacterKinds.Digit) != 0)
                 {
-                    if (canContainSpecialChars)
-                        predicate = x => _latinLetters.Value.Contains(x) || _latinDigits.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                    if ((canContain & CharacterKinds.Other) != 0)
+                    {
+                        if ((canContain & CharacterKinds.WhiteSpace) != 0)
+                            predicate = x => char.IsWhiteSpace(x) || _latinLetters.Value.Contains(x) || _latinDigits.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                        else
+                            predicate = x => _latinLetters.Value.Contains(x) || _latinDigits.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                    }
+                    else if ((canContain & CharacterKinds.WhiteSpace) != 0)
+                        predicate = x => char.IsWhiteSpace(x) || _latinLetters.Value.Contains(x) || _latinDigits.Value.Contains(x);
                     else
                         predicate = x => _latinLetters.Value.Contains(x) || _latinDigits.Value.Contains(x);
                 }
-                else if (canContainSpecialChars)
-                    predicate = x => _latinLetters.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                else if ((canContain & CharacterKinds.Other) != 0)
+                {
+                    if ((canContain & CharacterKinds.WhiteSpace) != 0)
+                        predicate = x => char.IsWhiteSpace(x) || _latinLetters.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                    else
+                        predicate = x => _latinLetters.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                }
+                else if ((canContain & CharacterKinds.WhiteSpace) != 0)
+                    predicate = x => char.IsWhiteSpace(x) || _latinLetters.Value.Contains(x);
                 else
                     predicate = _latinLetters.Value.Contains;
             }
-            else if (canContainDigits)
+            else if ((canContain & CharacterKinds.Digit) != 0)
             {
-                if (canContainSpecialChars)
-                    predicate = x => _latinDigits.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                if ((canContain & CharacterKinds.Other) != 0)
+                {
+                    if ((canContain & CharacterKinds.WhiteSpace) != 0)
+                        predicate = x => char.IsWhiteSpace(x) || _latinDigits.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                    else
+                        predicate = x => _latinDigits.Value.Contains(x) || _latinNonAlphanumerics.Value.Contains(x);
+                }
+                else if ((canContain & CharacterKinds.WhiteSpace) != 0)
+                    predicate = x => char.IsWhiteSpace(x) || _latinDigits.Value.Contains(x);
                 else
                     predicate = _latinDigits.Value.Contains;
             }
-            else if (canContainSpecialChars)
-                predicate = _latinNonAlphanumerics.Value.Contains;
+            else if ((canContain & CharacterKinds.Other) != 0)
+            {
+                if ((canContain & CharacterKinds.WhiteSpace) != 0)
+                    predicate = x => char.IsWhiteSpace(x) || _latinNonAlphanumerics.Value.Contains(x);
+                else
+                    predicate = _latinNonAlphanumerics.Value.Contains;
+            }
+            else if ((canContain & CharacterKinds.Other) != 0)
+                predicate = char.IsWhiteSpace;
             else
                 return string.Empty;
             StringBuilder sb = new();
